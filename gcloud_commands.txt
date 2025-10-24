@@ -1,0 +1,44 @@
+export PROJECT_ID=retail-shop-project
+export REGION=asia-south1
+export BUCKET_NAME=retail-shop-main-bucket
+export TOPIC=transactions-topic
+export SUBSCRIPTION=transactions-sub
+export DATASET=bq_retail_reporting_ds
+
+# create bucket
+gsutil mb -l $REGION gs://$BUCKET_NAME
+
+# disable soft delete or versioning on bucket
+gsutil versioning set off gs://retail-shop-main-bucket
+gsutil retention clear gs://retail-shop-main-bucket
+gsutil retention temp set-off gs://YOUR_BUCKET_NAME/**
+gsutil retention permanent set-off gs://YOUR_BUCKET_NAME/**
+
+
+
+# create pubsub topic and subscription
+gcloud pubsub topics create $TOPIC --project=$PROJECT_ID
+gcloud pubsub subscriptions create $SUBSCRIPTION --topic=$TOPIC --project=$PROJECT_ID
+
+# create bigquery dataset
+bq --location=asia-south1 mk --dataset $PROJECT_ID:$DATASET
+
+
+
+# Run 'simulate_transactions.py' (publish to real Pub/Sub):
+
+pip install -r requirements.txt
+python simulate_transactions.py --project retail-shop-project --topic projects/retail-shop-project/topics/transactions-topic --rate 5 --count 10
+
+# sample publish event output : Published event_id=8078da0b-09a7-41e3-9344-f3c7e2af95bd total=260.0
+
+#Run locally (direct runner) for small tests:
+python dataflow_pipeline.py --project retail-shop-project --region asia-south1 --runner DirectRunner --input_topic projects/retail-shop-project/topics/transactions-topic --output_dataset bq_retail_reporting_ds
+
+#Enable DataFlow API (If not yet)
+https://console.developers.google.com/apis/api/dataflow.googleapis.com/overview?project=retail-shop-project
+
+#run using DataFlowRunner:
+python dataflow_pipeline.py --project retail-shop-project --region asia-south1 --runner DataflowRunner --temp_location gs://retail-shop-main-bucket/temp --staging_location gs://retail-shop-main-bucket/staging --worker_machine_type n1-standard-1 --max_num_workers 2 --input_topic projects/retail-shop-project/topics/transactions-topic --output_dataset bq_retail_reporting_ds
+
+# --worker_zone asia-south1-a 

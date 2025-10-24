@@ -38,7 +38,8 @@ def run(argv=None):
         messages = (p
             | "ReadFromPubSub" >> beam.io.ReadFromPubSub(topic=known_args.input_topic, with_attributes=False)
             | "ParseJSON" >> beam.ParDo(ParseAndValidate())
-            | "Deduplicate" >> beam.RemoveDuplicates(lambda r: r["event_id"])
+            # | "Deduplicate" >> beam.RemoveDuplicates(lambda r: r["event_id"])
+            | "Deduplicate" >> beam.Distinct(key=lambda r: r["event_id"])
             | "EnrichData" >> beam.ParDo(AddEnrichment())
         )
 

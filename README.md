@@ -11,7 +11,7 @@ This repository is a starter end-to-end example showing how to simulate retail/l
 > - Deduplication / idempotency strategies
 > - BigQuery schemas & BI-ready datasets
 > - Deployment & troubleshooting
-
+ 
 ---
 
 ## Architecture
@@ -51,7 +51,7 @@ BigQuery datasets/tables -> BI (Looker/Looker Studio/Metabase)
 ## Prerequisites
 
 - Google Cloud project with billing enabled.
-- `gcloud` CLI and `python` (3.8+ recommended) installed.
+- `gcloud` CLI and `python` (3.8+ recommended) installed in local machine. Otherwise, use GCP webUI CloudShell.
 - Google Cloud SDK authenticated: `gcloud auth login` and `gcloud config set project YOUR_PROJECT_ID`.
 - Enable APIs: Pub/Sub, Dataflow, BigQuery, Cloud Storage.
   ```bash
@@ -65,13 +65,14 @@ BigQuery datasets/tables -> BI (Looker/Looker Studio/Metabase)
 
 Replace `PROJECT_ID`, `REGION`, `BUCKET_NAME` before running.
 
-```bash
-PROJECT_ID=your-gcp-project
-REGION=us-central1
-BUCKET_NAME=your-gcs-bucket-for-templates
-TOPIC=transactions-topic
-SUBSCRIPTION=transactions-sub
-DATASET=retail_reporting
+```#execute on bash/gcloud
+
+export PROJECT_ID=retail-shop-project
+export REGION=asia-south1
+export BUCKET_NAME=retail-shop-main-bucket
+export TOPIC=transactions-topic
+export SUBSCRIPTION=transactions-sub
+export DATASET=bq_retail_reporting_ds
 
 # create bucket
 gsutil mb -l $REGION gs://$BUCKET_NAME
@@ -81,7 +82,7 @@ gcloud pubsub topics create $TOPIC --project=$PROJECT_ID
 gcloud pubsub subscriptions create $SUBSCRIPTION --topic=$TOPIC --project=$PROJECT_ID
 
 # create bigquery dataset
-bq --location=US mk --dataset $PROJECT_ID:$DATASET
+bq --location=asia-south1 mk --dataset $PROJECT_ID:$DATASET
 ```
 
 See `deploy/` for more commands.
@@ -115,7 +116,6 @@ python simulate_transactions.py \
 
 Notes:
 - The script uses `google-cloud-pubsub` client.
-- For local testing without GCP, see the `Local emulation` section.
 
 ---
 
@@ -141,7 +141,8 @@ python dataflow_pipeline.py \
   --project YOUR_PROJECT_ID \
   --region us-central1 \
   --runner DirectRunner \
-  --input_topic projects/YOUR_PROJECT_ID/topics/transactions-topic
+  --input_topic projects/YOUR_PROJECT_ID/topics/transactions-topic \
+  --output_dataset bq_retail_reporting_ds
 ```
 
 Deploy to Dataflow (example using Dataflow Runner V2):
